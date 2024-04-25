@@ -21,9 +21,9 @@ func Write_mouse_pos_in_console() {
 	}
 }
 
-func Mouse_left_long_rand_click() {
+func Mouse_left_long_rand_click(min, max float64) {
 	robotgo.MouseDown("left")
-	time.Sleep(time.Duration(RandFloat32(0.3, 1.0) * float32(time.Second)))
+	time.Sleep(time.Duration(RandFloat64(min, max) * float64(time.Second)))
 	robotgo.MouseUp("left")
 }
 
@@ -36,9 +36,9 @@ func Rand_number(min_numb, max_numb int) int {
 	rand.Seed(time.Now().UnixNano())
 	return rand.Intn(max_numb-min_numb+1) + min_numb
 }
-func RandFloat32(minNumb, maxNumb float32) float32 {
+func RandFloat64(minNumb, maxNumb float64) float64 {
 	rand.Seed(time.Now().UnixNano())
-	return rand.Float32()*(maxNumb-minNumb) + minNumb
+	return rand.Float64()*(maxNumb-minNumb) + minNumb
 }
 
 // передвигает мышку медленно в заданную координату
@@ -77,6 +77,29 @@ func Capture_screen() gocv.Mat {
 	return mat
 }
 
+// вырезать кусок по заданным координатам заданного размера
+func CropImage(img gocv.Mat, x, y, width, height int) gocv.Mat {
+	if img.Empty() {
+		panic("Пустая матрица изображения")
+	}
+	var rect image.Rectangle
+	// Определяем область интереса
+	if x+width > 1600 && y+height > 800 {
+		rect = image.Rect(x, y, 1600, 800)
+	} else if x+width > 1600 {
+		rect = image.Rect(x, y, 1600, y+height)
+	} else if y+height > 800 {
+		rect = image.Rect(x, y, x+width, 800)
+	} else {
+		rect = image.Rect(x, y, x+width, y+height)
+	}
+
+	// Обрезаем изображение
+	croppedImg := img.Region(rect)
+
+	return croppedImg
+}
+
 // 2 | 1
 // --|--
 // 3 | 4
@@ -103,10 +126,10 @@ func Find_poplavok(img gocv.Mat, quarter int) (int, int, error) {
 	case 3:
 		min_x = 0
 		min_y = img.Rows() / 2
-		max_x = img.Cols() / 2
+		max_x = img.Cols()/2 - 100
 		max_y = img.Rows()
 	default:
-		min_x = img.Cols() / 2
+		min_x = img.Cols()/2 + 100
 		min_y = img.Rows() / 2
 		max_x = img.Cols()
 		max_y = img.Rows()
@@ -116,12 +139,15 @@ func Find_poplavok(img gocv.Mat, quarter int) (int, int, error) {
 			// Получаем значения каналов BGR
 			vecRGB := img.GetVecbAt(y, x)
 			// Проверяем значение красного канала
-			if int(vecRGB[2]) > 230 && int(vecRGB[1]) < 180 && int(vecRGB[0]) < 180 {
+			if int(vecRGB[2]) > 240 && int(vecRGB[1]) < 100 && int(vecRGB[0]) < 180 {
+				if x >= 706 && y >= 530 && y <= 560 && x <= 890 {
+					continue
+				}
 				return x, y, nil
 			}
 		}
 	}
-	return 0, 0, fmt.Errorf("cant save")
+	return 0, 0, fmt.Errorf("cant find")
 }
 func Kanny(path string) (gocv.Mat, error) {
 	template := gocv.IMRead(path, gocv.IMReadColor)
