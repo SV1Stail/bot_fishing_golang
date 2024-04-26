@@ -149,13 +149,25 @@ func Find_poplavok(img gocv.Mat, quarter int) (int, int, error) {
 	}
 	return 0, 0, fmt.Errorf("cant find")
 }
-func Kanny(path string) (gocv.Mat, error) {
-	template := gocv.IMRead(path, gocv.IMReadColor)
-	defer template.Close()
-	if template.Empty() {
-		return gocv.NewMat(), fmt.Errorf("no image")
+func Kanny(input interface{}) (gocv.Mat, error) {
+	var template gocv.Mat
+	switch path := input.(type) {
+	case string:
+		template = gocv.IMRead(path, gocv.IMReadColor)
+		defer template.Close()
+		if template.Empty() {
+			return gocv.NewMat(), fmt.Errorf("no image")
+		}
+	case gocv.Mat:
+		template = path.Clone()
+		defer template.Close()
+		if template.Empty() {
+			return gocv.NewMat(), fmt.Errorf("no image")
+		}
+	default:
+		return gocv.NewMat(), fmt.Errorf("unsupported input type")
 	}
-
+	defer template.Close()
 	grey := gocv.NewMat()
 	defer grey.Close()
 	gocv.CvtColor(template, &grey, gocv.ColorBGRToGray)
@@ -173,7 +185,7 @@ func Kanny(path string) (gocv.Mat, error) {
 }
 
 func Bigger_edges(img gocv.Mat) {
-	kernel := gocv.GetStructuringElement(gocv.MorphRect, image.Pt(3, 3))
+	kernel := gocv.GetStructuringElement(gocv.MorphRect, image.Pt(2, 1))
 	defer kernel.Close()
 	gocv.Dilate(img, &img, kernel)
 }
