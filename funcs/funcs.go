@@ -77,6 +77,29 @@ func Capture_screen() gocv.Mat {
 	return mat
 }
 
+// сравнить 2 матрицы и получить разницу в пикселях
+// sum := суммарную разницу (int),  meanDiff := среднее отклонение пикселей (float32)
+func CompareImages(img1, img2 gocv.Mat) (int, float32) {
+	if img1.Empty() || img2.Empty() {
+		return -1, 0.0 // Возвращает 0, если одно из изображений пустое
+	}
+
+	// Создаем новую матрицу для хранения различий
+	diff := gocv.NewMat()
+	defer diff.Close()
+
+	// Вычисляем разницу между двумя изображениями
+	gocv.AbsDiff(img1, img2, &diff)
+
+	// Вычисляем суммарное значение пикселей различий
+	sum := diff.Sum()
+	// Рассчитываем среднее значение разницы на пиксель
+	totalPixels := diff.Rows() * diff.Cols()
+	meanDiff := float32(sum.Val1) / float32(totalPixels)
+
+	return int(sum.Val1), meanDiff
+}
+
 // вырезать кусок по заданным координатам заданного размера
 func CropImage(img gocv.Mat, x, y, width, height int) gocv.Mat {
 	if img.Empty() {
@@ -84,12 +107,12 @@ func CropImage(img gocv.Mat, x, y, width, height int) gocv.Mat {
 	}
 	var rect image.Rectangle
 	// Определяем область интереса
-	if x+width > 1600 && y+height > 800 {
-		rect = image.Rect(x, y, 1600, 800)
+	if x+width > 1600 && y+height > 900 {
+		rect = image.Rect(x, y, 1600, 900)
 	} else if x+width > 1600 {
 		rect = image.Rect(x, y, 1600, y+height)
-	} else if y+height > 800 {
-		rect = image.Rect(x, y, x+width, 800)
+	} else if y+height > 900 {
+		rect = image.Rect(x, y, x+width, 900)
 	} else {
 		rect = image.Rect(x, y, x+width, y+height)
 	}
